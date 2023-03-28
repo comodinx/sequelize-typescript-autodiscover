@@ -1,0 +1,31 @@
+env:
+  browser: true
+  commonjs: true
+  es2021: true
+extends: standard
+globals:
+  Atomics: readonly
+  SharedArrayBuffer: readonly
+  # Prevent tests broken undefined global variables
+  beforeEach: readonly
+  afterEach: readonly
+  before: readonly
+  after: readonly
+  describe: readonly
+  expect: readonly
+  it: readonly
+parserOptions:
+  ecmaVersion: latest
+rules:
+  semi: [2, "always"]
+  quotes: [2, "double"]
+  indent: [2, 2, { "SwitchCase": 1 }]
+  comma-dangle: ["error", "only-multiline"]
+  brace-style: [2, "stroustrup", { "allowSingleLine": true }]
+  arrow-spacing: "error"
+  no-confusing-arrow: "error"
+  no-duplicate-imports: "error"
+  no-var: "error"
+  object-shorthand: "off"
+  prefer-const: "error"
+  prefer-template: "warn"

@@ -1,0 +1,71 @@
+#! /usr/bin/env node
+
+//
+// imports
+//
+const path = require("path");
+const program = require("commander");
+const pkg = require("../package.json");
+const SequelizeTypescriptAutodiscover = require("../core/autodiscover");
+
+//
+// helpers
+//
+const commaSeparatedList = (value) => value.split(',');
+
+//
+// program
+//
+program
+  .name(pkg.name)
+  .version(`sequelize-typescript-autodiscover version: ${pkg.version}`);
+
+program
+  .requiredOption("-H, --host <host>", "database host")
+  .requiredOption("-d, --database <database>", "name of database")
+  .requiredOption("-u, --username <username>", "user of database")
+  .option("-p, --password <password>", "password of database")
+  .option("-P, --port <number>", "port of database, default 3306", 3306)
+  .option("-o, --output <dirname>", "models output dir", "./models")
+  .option("-c, --clean", "indicate if clean previous discover result", false)
+  .option("-v, --verbose <boolean>", "verbose enabled", false)
+  .option("--dialect <string>", "name of dialect", "mysql")
+  .option("--tables <items>", "list of tables", commaSeparatedList)
+  .option("--skipTables <items>", "list of skip tables", commaSeparatedList)
+  .option("--stringQuotes <string>", "string quote", "\"")
+  .option("--maxImportsInline <number>", "indicate number of max imports inline", 4)
+  .option("--indentSize <number>", "indentation size", 2)
+  .option("--customModelImport <string>", "custom model dependency package", null)
+  .option("--customModelName <string>", "custom model name", "Model")
+  .option("--nestJsSwaggerSupport", "indicate if use @nestjs/swagger on your proyect", false)
+  .option("--no-defaultExport", "indicate if export model as default", true)
+  .option("--no-normalizeReletionshipName", "indicate if is necesary normalizate the relationship name", true);
+
+program.parse(process.argv);
+
+//
+// preparation
+//
+const options = program.opts();
+
+options.output = path.resolve(process.cwd(), options.output);
+options.tables = options.tables || null;
+options.skipTables = options.skipTables || null;
+
+//
+// discover
+//
+const auto = new SequelizeTypescriptAutodiscover({
+  database: {
+    database: options.database,
+    username: options.username,
+    password: options.password,
+    dialect: options.dialect,
+    logging: options.verbose ? console.log : false,
+  },
+  discover: options,
+});
+
+auto
+  .run()
+  .then(() => process.exit(0));

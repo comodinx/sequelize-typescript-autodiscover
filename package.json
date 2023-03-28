@@ -1,0 +1,52 @@
+{
+  "name": "sequelize-typescript-autodiscover",
+  "version": "0.0.1",
+  "description": "sequelize-typescript-autodiscover is an discover database models/entities (TS). Based on sequelize 6",
+  "main": "index.js",
+  "scripts": {
+    "lint": "node_modules/.bin/eslint --fix core",
+    "test": "echo \"No test specified\" && exit 0",
+    "discover": "./bin/sequelize-typescript-autodiscover"
+  },
+  "homepage": "https://gitlab.com/comodinx/sequelize-typescript-autodiscover#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://gitlab.com/comodinx/sequelize-typescript-autodiscover.git"
+  },
+  "author": "Milo Molina Developer",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/comodinx/sequelize-typescript-autodiscover/issues"
+  },
+  "keywords": [
+    "sequelize",
+    "sequelize-typescript",
+    "sequelize-typescript-autodiscover",
+    "database",
+    "automate",
+    "comodinx",
+    "discover",
+    "autodiscover"
+  ],
+  "dependencies": {
+    "async": "^3.2.4",
+    "colors": "^1.4.0",
+    "commander": "^4.1.1",
+    "lodash": "^4.17.21",
+    "mysql2": "^2.3.3",
+    "ora": "^4.1.1",
+    "pluralize": "^8.0.0",
+    "sequelize": "^5.22.5"
+  },
+  "devDependencies": {
+    "@eslint/create-config": "^0.4.2",
+    "eslint": "^8.36.0",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-n": "^15.6.1",
+    "eslint-plugin-promise": "^6.1.1"
+  },
+  "bin": {
+    "sequelize-typescript-autodiscover": "./bin/sequelize-typescript-autodiscover"
+  }
+}
