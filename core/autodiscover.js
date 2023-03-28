@@ -280,12 +280,13 @@ class SequelizeTypescriptAutodiscover {
         columnDefinition.decorators.push("@Unique");
       }
 
-      if (columnStructure.defaultValue) {
-        columnDefinition.decorators.push(`@Default(sequelize.literal("${columnStructure.defaultValue}"))`);
-        definition.imports["sequelize-typescript"].add("Default");
-        definition.imports.sequelize = definition.imports.sequelize || new Set([]);
-        definition.imports.sequelize.add("liretal");
-      }
+      // TODO : Review this code
+      // if (columnStructure.defaultValue) {
+      //   columnDefinition.decorators.push(`@Default(sequelize.literal("${columnStructure.defaultValue}"))`);
+      //   definition.imports["sequelize-typescript"].add("Default");
+      //   definition.imports.sequelize = definition.imports.sequelize || new Set([]);
+      //   definition.imports.sequelize.add("liretal");
+      // }
 
       if (columnName === "created_at" || columnName === "createdAt") {
         columnDefinition.decorators.push("@CreatedAt");
