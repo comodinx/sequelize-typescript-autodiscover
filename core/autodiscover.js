@@ -12,9 +12,9 @@ const fs = require("fs");
 const ora = require("ora");
 const path = require("path");
 const async = require("async");
-const helpers = require("./helpers");
 const pluralize = require("pluralize");
 const Sequelize = require("sequelize");
+const helpers = require("./helpers");
 
 //
 // constants
