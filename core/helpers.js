@@ -5,6 +5,7 @@
 //
 const _ = require("lodash");
 const typesMap = require("./typesMap");
+const dataTypesMap = require("./dataTypesMap");
 
 //
 // constants
@@ -13,8 +14,6 @@ const defaultMaxImportsInline = +(process.env.AUTODISCOVER_MAX_IMPORTS_INLINE ||
 const defaultStringQuotes = process.env.AUTODISCOVER_STRING_QUOTES || "\"";
 const defaultIndentSize = +(process.env.AUTODISCOVER_INDENT_SIZE || 2);
 
-const regexpLength = /\(\d+\)/g;
-
 //
 // helpers
 //
@@ -22,8 +21,16 @@ const indent = (n = 1) => {
   return " ".repeat(n);
 };
 
-const dbTypeToTsType = (type = "", defaultType = "any") => {
-  return typesMap[type.replace(regexpLength, "").toUpperCase()] || defaultType;
+const dbTypeToTsType = (type = "", options = {}) => {
+  const resolvedType = type.split("(")[0].toUpperCase();
+
+  return options.tsTypes?.[resolvedType] || typesMap[resolvedType] || "any";
+};
+
+const dbTypeToDataType = (type = "", options = {}) => {
+  const resolvedType = type.split("(")[0].toUpperCase();
+
+  return options.dataTypes?.[resolvedType] || dataTypesMap[resolvedType] || "DataType.JSON";
 };
 
 const importsToString = (imports = [], options = {}) => {
@@ -106,6 +113,7 @@ const classRelationshipsToString = (relationships = [], options = {}) => {
 //
 module.exports.indent = indent;
 module.exports.dbTypeToTsType = dbTypeToTsType;
+module.exports.dbTypeToDataType = dbTypeToDataType;
 module.exports.importsToString = importsToString;
 module.exports.classPropertiesToString = classPropertiesToString;
 module.exports.classRelationshipsToString = classRelationshipsToString;

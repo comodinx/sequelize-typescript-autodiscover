@@ -183,7 +183,7 @@ class SequelizeTypescriptAutodiscover {
         const table = this.data.tables[tableName];
         table.name = tableName;
 
-        const definition = await this.resolveDefinition(table);
+        const definition = await this.resolveTableDefinition(table);
         definitions[definition.name] = definition;
         return definitions;
       };
@@ -203,8 +203,8 @@ class SequelizeTypescriptAutodiscover {
     });
   }
 
-  resolveDefinition (table) {
-    const spinner = ora(`⚙️  generating definition for ${table.name.blue}`).start();
+  resolveTableDefinition (table) {
+    const spinner = ora(`⚙️  generating definition for ${table.name.cyan}`).start();
 
     const name = table.name;
     const fieldName = pluralize.singular(_.camelCase(name));
@@ -238,121 +238,132 @@ class SequelizeTypescriptAutodiscover {
     definition.classDefinitionStart = `export${this.options.discover.defaultExport ? " default" : ""} class ${className} extends Model<${className}> {`;
     definition.classDefinitionEnd = "}";
 
-    // generate columns
     const columns = Object.keys(table.structures);
     definition.classProperties = [];
+    columns.forEach(columnName => this.resolveColumnDefinition(columnName, table, definition));
 
-    columns.forEach(columnName => {
-      const columnStructure = table.structures[columnName];
-      const columnDefinition = {};
+    spinner.succeed(`⎯  definition for ${table.name.cyan} generated successfully`);
+    return definition;
+  }
 
-      columnDefinition.decorators = [];
+  resolveColumnDefinition (columnName, table, definition) {
+    const columnStructure = table.structures[columnName];
+    const columnDefinition = {};
 
-      if (this.options.discover.nestJsSwaggerSupport) {
-        const descriptionResolver = (
-          columnStructure.comment ||
-          this.options.discover.descriptions?.[columnName] ||
-          this.options.discover.descriptions?.defaults ||
-          defaultDescriptionResolver
-        );
+    columnDefinition.decorators = [];
 
-        const comment = _.isFunction(descriptionResolver) ? descriptionResolver({ className, columnName }) : descriptionResolver;
+    if (this.options.discover.nestJsSwaggerSupport) {
+      const descriptionResolver = (
+        columnStructure.comment ||
+        this.options.discover.descriptions?.[columnName] ||
+        this.options.discover.descriptions?.defaults ||
+        defaultDescriptionResolver
+      );
 
-        if (comment) {
-          columnDefinition.decorators.push(`@ApiProperty({ description: "${comment.replace(/\n/g, " ")}" })`);
+      const comment = _.isFunction(descriptionResolver) ? descriptionResolver({ className: definition.className, columnName }) : descriptionResolver;
+
+      if (comment) {
+        columnDefinition.decorators.push(`@ApiProperty({ description: "${comment.replace(/\n/g, " ")}" })`);
+      }
+    }
+
+    if (columnStructure.primaryKey) {
+      columnDefinition.decorators.push("@PrimaryKey");
+      definition.imports["sequelize-typescript"].add("PrimaryKey");
+    }
+
+    if (columnStructure.autoIncrement) {
+      columnDefinition.decorators.push("@AutoIncrement");
+      definition.imports["sequelize-typescript"].add("AutoIncrement");
+    }
+
+    columnDefinition.decorators.push(`@AllowNull(${columnStructure.allowNull})`);
+    definition.imports["sequelize-typescript"].add("AllowNull");
+
+    if (columnStructure.unique) {
+      columnDefinition.decorators.push("@Unique");
+    }
+
+    // TODO : Review this code
+    // if (columnStructure.defaultValue) {
+    //   columnDefinition.decorators.push(`@Default(sequelize.literal("${columnStructure.defaultValue}"))`);
+    //   definition.imports["sequelize-typescript"].add("Default");
+    //   definition.imports.sequelize = definition.imports.sequelize || new Set([]);
+    //   definition.imports.sequelize.add("liretal");
+    // }
+
+    if (columnName === "created_at" || columnName === "createdAt") {
+      columnDefinition.decorators.push("@CreatedAt");
+      definition.imports["sequelize-typescript"].add("CreatedAt");
+    }
+    if (columnName === "updated_at" || columnName === "updatedAt") {
+      columnDefinition.decorators.push("@UpdatedAt");
+      definition.imports["sequelize-typescript"].add("UpdatedAt");
+    }
+    if (columnName === "deleted_at" || columnName === "deletedAt") {
+      columnDefinition.decorators.push("@DeletedAt");
+      definition.imports["sequelize-typescript"].add("DeletedAt");
+    }
+
+    const foreignKey = table.foreignKeys?.find(foreignKey => foreignKey.columnName === columnName);
+
+    if (foreignKey) {
+      const relationName = pluralize.singular(foreignKey.referencedTableName);
+
+      definition.classRelationships = definition.classRelationships || [];
+
+      if (!_.find(definition.classRelationships, ["relationName", relationName])) {
+        let relationFieldName = _.camelCase(relationName);
+        const relationImportName = `./${relationFieldName}`;
+        const relationClassName = _.upperFirst(relationFieldName);
+
+        if (this.options.discover.normalizeReletionshipName) {
+          if (relationFieldName.startsWith(definition.fieldName)) {
+            relationFieldName = _.lowerFirst(relationFieldName.replace(definition.fieldName, ""));
+          }
         }
-      }
 
-      if (columnStructure.primaryKey) {
-        columnDefinition.decorators.push("@PrimaryKey");
-        definition.imports["sequelize-typescript"].add("PrimaryKey");
-      }
-
-      if (columnStructure.autoIncrement) {
-        columnDefinition.decorators.push("@AutoIncrement");
-        definition.imports["sequelize-typescript"].add("AutoIncrement");
-      }
-
-      columnDefinition.decorators.push(`@AllowNull(${columnStructure.allowNull})`);
-      definition.imports["sequelize-typescript"].add("AllowNull");
-
-      if (columnStructure.unique) {
-        columnDefinition.decorators.push("@Unique");
-      }
-
-      // TODO : Review this code
-      // if (columnStructure.defaultValue) {
-      //   columnDefinition.decorators.push(`@Default(sequelize.literal("${columnStructure.defaultValue}"))`);
-      //   definition.imports["sequelize-typescript"].add("Default");
-      //   definition.imports.sequelize = definition.imports.sequelize || new Set([]);
-      //   definition.imports.sequelize.add("liretal");
-      // }
-
-      if (columnName === "created_at" || columnName === "createdAt") {
-        columnDefinition.decorators.push("@CreatedAt");
-        definition.imports["sequelize-typescript"].add("CreatedAt");
-      }
-      if (columnName === "updated_at" || columnName === "updatedAt") {
-        columnDefinition.decorators.push("@UpdatedAt");
-        definition.imports["sequelize-typescript"].add("UpdatedAt");
-      }
-      if (columnName === "deleted_at" || columnName === "deletedAt") {
-        columnDefinition.decorators.push("@DeletedAt");
-        definition.imports["sequelize-typescript"].add("DeletedAt");
-      }
-
-      const foreignKey = table.foreignKeys?.find(foreignKey => foreignKey.columnName === columnName);
-
-      if (foreignKey) {
-        const relationName = pluralize.singular(foreignKey.referencedTableName);
+        columnDefinition.decorators.push(`@ForeignKey(() => ${relationClassName})`);
+        definition.imports[relationImportName] = definition.imports[relationImportName] || [];
+        definition.imports[relationImportName].push(relationClassName);
+        definition.imports["sequelize-typescript"].add("ForeignKey");
+        definition.imports["sequelize-typescript"].add("BelongsTo");
 
         definition.classRelationships = definition.classRelationships || [];
-
-        if (!_.find(definition.classRelationships, ["relationName", relationName])) {
-          let relationFieldName = _.camelCase(relationName);
-          const relationImportName = `./${relationFieldName}`;
-          const relationClassName = _.upperFirst(relationFieldName);
-
-          if (this.options.discover.normalizeReletionshipName) {
-            if (relationFieldName.startsWith(definition.fieldName)) {
-              relationFieldName = _.lowerFirst(relationFieldName.replace(definition.fieldName, ""));
-            }
-          }
-
-          columnDefinition.decorators.push(`@ForeignKey(() => ${relationClassName})`);
-          definition.imports[relationImportName] = definition.imports[relationImportName] || [];
-          definition.imports[relationImportName].push(relationClassName);
-          definition.imports["sequelize-typescript"].add("ForeignKey");
-          definition.imports["sequelize-typescript"].add("BelongsTo");
-
-          definition.classRelationships = definition.classRelationships || [];
-          definition.classRelationships.push({
-            relationName,
-            relationFieldName,
-            relationClassName,
-            relationImportName,
-            decorator: `@BelongsTo(() => ${relationClassName})`,
-            definition: `${relationFieldName}?: ${relationClassName};`,
-          });
-        }
+        definition.classRelationships.push({
+          relationName,
+          relationFieldName,
+          relationClassName,
+          relationImportName,
+          decorator: `@BelongsTo(() => ${relationClassName})`,
+          definition: `${relationFieldName}?: ${relationClassName};`,
+        });
       }
+    }
 
-      columnDefinition.decorators.push(`@Column${columnName.includes("_") ? `({ field: "${columnName}" })` : ""}`);
-      columnDefinition.propertyDefinition = `${_.camelCase(columnName)}${columnStructure.allowNull ? "?" : ""}: ${helpers.dbTypeToTsType(columnStructure.type)};`;
+    const columnOptions = [];
+    const columnType = helpers.dbTypeToTsType(columnStructure.type, this.options.discover);
 
-      definition.classProperties.push(columnDefinition);
+    if (columnName.includes("_")) {
+      columnOptions.push(`field: "${columnName}"`);
+    }
+    if (columnType === "any") {
+      definition.imports["sequelize-typescript"].add("DataType");
+      columnOptions.push(`type: ${helpers.dbTypeToDataType(columnStructure.type, this.options.discover)}`);
+    }
 
-      if (table.foreignKeys?.length) {
-        table.foreignKeys.forEach(foreignKey => this.queuePendingRelationships.add({
-          tableName: foreignKey.referencedTableName,
-          referencedTableName: table.name,
-          foreignKey,
-        }));
-      }
-    });
+    columnDefinition.decorators.push(`@Column${columnOptions.length ? `({ ${columnOptions.join(", ")} })` : ""}`);
+    columnDefinition.propertyDefinition = `${_.camelCase(columnName)}${columnStructure.allowNull ? "?" : ""}: ${columnType};`;
 
-    spinner.succeed(`⎯  definition for ${table.name.blue} generated successfully`);
-    return definition;
+    definition.classProperties.push(columnDefinition);
+
+    if (table.foreignKeys?.length) {
+      table.foreignKeys.forEach(foreignKey => this.queuePendingRelationships.add({
+        tableName: foreignKey.referencedTableName,
+        referencedTableName: table.name,
+        foreignKey,
+      }));
+    }
   }
 
   async resolveRelationships () {

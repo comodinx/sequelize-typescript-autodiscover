@@ -1,6 +1,6 @@
 {
   "name": "sequelize-typescript-autodiscover",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "sequelize-typescript-autodiscover is an discover database models/entities (TS). Based on sequelize 6",
   "main": "index.js",
   "scripts": {
